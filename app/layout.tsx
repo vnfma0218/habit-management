@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Header } from "@/components/layout/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,32 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+          <div
+            className="
+            flex min-h-screen w-full max-w-3xl flex-col 
+            items-center 
+            px-4 py-8                 /* ✅ 모바일 기본 */
+            sm:px-8 sm:py-10          /* 태블릿 이상 */
+            md:px-12                  /* 데스크톱 */
+            bg-white dark:bg-black 
+            sm:items-start
+          "
+          >
+            <Header />
+
+            <main
+              className="
+              mt-8 w-full 
+              px-2        /* ✅ 모바일 */
+              sm:px-6     /* 태블릿 */
+              md:px-12    /* 데스크톱 */
+            "
+            >
+              {children}
+            </main>
+          </div>
+        </div>
       </body>
     </html>
   );
