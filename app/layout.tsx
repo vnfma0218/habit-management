@@ -45,7 +45,7 @@ export default function RootLayout({
             <main
               className="
               mt-8 w-full 
-              px-2        /* ✅ 모바일 */
+              
               sm:px-6     /* 태블릿 */
               md:px-12    /* 데스크톱 */
             "

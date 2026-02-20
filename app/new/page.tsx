@@ -1,22 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { Label } from "@/components/ui/label";
 import { PASTEL_COLORS } from "@/lib/color";
-import { Clock2Icon } from "lucide-react";
 import { useState } from "react";
+
 const DEFAULT_ICONS = [
   "🏃",
   "🚶",
@@ -52,10 +40,31 @@ const DEFAULT_ICONS = [
   "📌",
 ];
 
+type TimePreset = "morning" | "afternoon" | "evening" | null;
+
+const TIME_PRESETS: { key: TimePreset; label: string }[] = [
+  { key: "morning", label: "오전" },
+  { key: "afternoon", label: "오후" },
+  { key: "evening", label: "저녁" },
+];
+
 export default function New() {
-  const [selectedIcon, setSelectedIcon] = useState<string>("💧");
+  const [selectedIcon, setSelectedIcon] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState("#FFD6E5");
   const [repeatDays, setRepeatDays] = useState<number | null>(null);
+
+  // ✅ 시간대 버튼 상태
+  const [timePreset, setTimePreset] = useState<TimePreset[]>([]);
+  // (선택) 인풋 값도 상태로 쓰고 싶다면
+  const [timeText, setTimeText] = useState("");
+
+  const toggleTimePreset = (key: TimePreset) => {
+    setTimePreset((prev) =>
+      prev.includes(key) ? prev.filter((v) => v !== key) : [...prev, key]
+    );
+  };
+
+  const isSelected = (key: TimePreset) => timePreset.includes(key);
 
   return (
     <div>
@@ -64,6 +73,7 @@ export default function New() {
           <FieldLabel htmlFor="name">이름</FieldLabel>
           <Input id="name" placeholder="ex) 하루에 물 5번 먹기" />
         </Field>
+
         <Field>
           <FieldLabel htmlFor="repeat">반복</FieldLabel>
 
@@ -81,11 +91,11 @@ export default function New() {
                   type="button"
                   onClick={() => setRepeatDays(day)}
                   className={[
-                    "h-10 w-10 rounded-full border text-sm font-medium",
+                    "h-10 w-10 rounded-full border text-sm font-medium border-zinc-200",
                     "flex items-center justify-center transition-colors",
                     isSelected
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100",
+                      ? "bg-main text-white"
+                      : "bg-white text-zinc-700 hover:bg-zinc-100",
                   ].join(" ")}
                   aria-pressed={isSelected}
                 >
@@ -95,18 +105,47 @@ export default function New() {
             })}
           </div>
 
-          {/* 서버 제출용 */}
           <input type="hidden" name="repeatDays" value={repeatDays ?? ""} />
         </Field>
 
+        {/* ✅ 시간 필드 (모바일 col, sm+ row) */}
         <Field>
           <FieldLabel htmlFor="time">시간</FieldLabel>
-          <Input id="time" placeholder="ex) 잠자기 전, 일어난 직후" />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            {/* 버튼 3개 */}
+            <div className="flex flex-wrap gap-2">
+              {TIME_PRESETS.map((p) => (
+                <Button
+                  key={p.key}
+                  type="button"
+                  onClick={() => toggleTimePreset(p.key)}
+                  variant={isSelected(p.key) ? "primary" : "outline"}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+
+            {/* 인풋 */}
+            <Input
+              id="time"
+              placeholder="ex) 잠자기 전, 일어난 직후"
+              value={timeText}
+              onChange={(e) => setTimeText(e.target.value)}
+              className="w-full sm:flex-1"
+            />
+          </div>
         </Field>
+
+        <Field>
+          <FieldLabel htmlFor="goal">목표</FieldLabel>
+          <Input id="goal" placeholder="ex) 달리기 5분, 명상 1분 등" />
+        </Field>
+
         <Field>
           <FieldLabel htmlFor="icon">아이콘</FieldLabel>
 
-          {/* ✅ 가로 스크롤 아이콘 리스트 */}
           <div
             className="flex gap-2 overflow-x-auto pb-2"
             style={{ WebkitOverflowScrolling: "touch" }}
@@ -129,7 +168,6 @@ export default function New() {
                     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                   ].join(" ")}
                   aria-pressed={isSelected}
-                  aria-label={`아이콘 ${icon} 선택`}
                 >
                   {icon}
                 </button>
@@ -137,6 +175,7 @@ export default function New() {
             })}
           </div>
         </Field>
+
         <Field>
           <FieldLabel htmlFor="color">색상</FieldLabel>
 
@@ -151,7 +190,6 @@ export default function New() {
                   onClick={() => setSelectedColor(c.hex)}
                   className="shrink-0"
                   aria-pressed={isSelected}
-                  aria-label={`색상 ${c.hex} 선택`}
                 >
                   <div
                     className={[
@@ -172,16 +210,14 @@ export default function New() {
               );
             })}
 
-            {/* 폼 제출용 hidden 값 */}
             <input type="hidden" name="color" value={selectedColor} />
           </div>
         </Field>
 
         <Field orientation="horizontal">
-          <Button type="reset" variant="outline">
-            Reset
+          <Button variant="primary" type="submit" className="w-full">
+            습관 시작하기
           </Button>
-          <Button type="submit">Submit</Button>
         </Field>
       </FieldGroup>
     </div>
