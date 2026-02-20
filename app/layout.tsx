@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,11 +42,9 @@ export default function RootLayout({
           "
           >
             <Header />
-
             <main
               className="
               mt-8 w-full 
-              
               sm:px-6     /* 태블릿 */
               md:px-12    /* 데스크톱 */
             "
@@ -54,6 +53,7 @@ export default function RootLayout({
             </main>
           </div>
         </div>
+        <Toaster position="top-center" />
       </body>
     </html>
   );
