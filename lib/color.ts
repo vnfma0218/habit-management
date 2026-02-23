@@ -13,5 +13,5 @@ export const PASTEL_COLORS = [
   { id: "p12", hex: "#DFF6FF" }, // 아이스 블루
   { id: "p13", hex: "#FFF7E6" }, // 바닐라
   { id: "p14", hex: "#E2F0CB" }, // 라이트 그린
-  { id: "p15", hex: "#FFD8BE" }, // 피치
+  { id: "p15", hex: "#FFD8BE" }, // 피
 ];
