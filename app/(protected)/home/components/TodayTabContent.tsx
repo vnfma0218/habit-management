@@ -589,6 +589,11 @@ export function TodayTabContent({
           <div className="mt-1 text-sm text-slate-600">
             완료 {completed} / {visibleHabits.length}
           </div>
+          {visibleHabits.length > 0 && completed === visibleHabits.length ? (
+            <div className="mt-2 text-sm font-medium text-emerald-700">
+              오늘 루틴을 모두 완료했어요! 🎉👏
+            </div>
+          ) : null}
         </div>
       </div>
 
