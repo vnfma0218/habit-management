@@ -22,7 +22,7 @@ function TimeDivider({ label }: { label: string }) {
 
 function HabitRow({ habit }: { habit: TodayHabitDTO }) {
   return (
-    <Link href={`/myHabit/${habit.id}`} className="block">
+    <Link href={`/myhabit/${habit.id}`} className="block">
       <div
         style={{ backgroundColor: habit.color }}
         className={cn(

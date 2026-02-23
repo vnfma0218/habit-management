@@ -15,7 +15,7 @@ export function Header() {
   const menus = [
     { href: "/home", label: "Home" },
     { href: "/new", label: "New" },
-    { href: "/myHabit", label: "My Routines" },
+    { href: "/myhabit", label: "My Routines" },
   ];
 
   const onSignOut = async () => {

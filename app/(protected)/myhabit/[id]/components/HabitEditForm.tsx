@@ -111,7 +111,7 @@ export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
       if (!res.ok) throw new Error(json.error ?? "수정에 실패했습니다.");
 
       toast.success("루틴이 수정되었습니다.");
-      router.push("/myHabit");
+      router.push("/myhabit");
       router.refresh();
     } catch (error: unknown) {
       const message =

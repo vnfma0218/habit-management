@@ -1,6 +1,6 @@
-import { MyHabitList } from "./components/MyHabitList";
 import { createClient } from "@/lib/supabase/server";
 import { TodayHabitDTO } from "@/lib/habits/api";
+import { MyHabitList } from "./components/MyHabitList";
 
 function toISODate(d: Date) {
   return d.toISOString().slice(0, 10);
