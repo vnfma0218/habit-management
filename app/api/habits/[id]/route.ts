@@ -118,3 +118,43 @@ export async function PATCH(
 
   return NextResponse.json({ data }, { status: 200 });
 }
+
+export async function DELETE(
+  _req: Request,
+  ctx: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+
+  const { id: habitId } = await ctx.params;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("habits")
+    .select("id")
+    .eq("id", habitId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (existingError || !existing) {
+    return NextResponse.json({ error: "Habit not found" }, { status: 404 });
+  }
+
+  const { error } = await supabase
+    .from("habits")
+    .update({ is_active: false })
+    .eq("id", habitId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true }, { status: 200 });
+}

@@ -77,6 +77,7 @@ export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
   const [timePreset, setTimePreset] = useState<TimePreset>(initial.time_slot);
   const [timeText, setTimeText] = useState(initial.time_text ?? "");
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const toggleTimePreset = (key: TimePreset) => {
     setTimePreset((prev) => (prev === key ? null : key));
@@ -119,6 +120,33 @@ export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
       toast.error(message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onDelete = async () => {
+    if (deleting || submitting) return;
+    const ok = window.confirm(
+      "이 루틴을 삭제할까요? 오늘/주간 목록에서 더 이상 보이지 않습니다."
+    );
+    if (!ok) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/habits/${initial.id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "삭제에 실패했습니다.");
+
+      toast.success("루틴이 삭제되었습니다.");
+      router.push("/myhabit");
+      router.refresh();
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "삭제 중 오류가 발생했습니다.";
+      toast.error(message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -273,10 +301,28 @@ export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
             variant="primary"
             type="submit"
             className="w-full"
-            disabled={submitting}
+            disabled={submitting || deleting}
           >
             {submitting ? "저장 중..." : "루틴 수정하기"}
           </Button>
+        </Field>
+
+        <Field>
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+            <div className="text-sm font-medium text-red-700">삭제</div>
+            <p className="mt-1 text-xs text-red-600">
+              루틴을 삭제하면 목록에서 사라집니다.
+            </p>
+            <Button
+              type="button"
+              variant="destructive"
+              className="mt-3 w-full"
+              onClick={onDelete}
+              disabled={deleting || submitting}
+            >
+              {deleting ? "삭제 중..." : "루틴 삭제하기"}
+            </Button>
+          </div>
         </Field>
       </FieldGroup>
     </form>

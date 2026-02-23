@@ -55,7 +55,7 @@ export default function RootLayout({
               </main>
             </div>
           </div>
-          <Toaster position="top-center" />
+          <Toaster position="bottom-center" />
         </ReactQueryProvider>
       </body>
     </html>

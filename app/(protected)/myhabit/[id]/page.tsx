@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { HabitEditForm } from "./components/HabitEditForm";
 
 export default async function MyHabitDetail({
@@ -14,19 +14,18 @@ export default async function MyHabitDetail({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) notFound();
+  if (!user) redirect("/login");
 
   const { data: habit, error } = await supabase
     .from("habits")
-    .select(
-      "id,name,goal,weekly_target,time_slot,time_text,icon,color,user_id,is_active"
-    )
+    .select("id,name,goal,weekly_target,time_slot,time_text,icon,color,user_id")
     .eq("id", id)
     .eq("user_id", user.id)
-    .eq("is_active", true)
-    .single();
+    .maybeSingle();
 
-  if (error || !habit) notFound();
+  if (error || !habit) {
+    redirect("/myhabit");
+  }
 
   return (
     <div className="w-full">
