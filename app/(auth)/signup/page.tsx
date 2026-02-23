@@ -42,11 +42,11 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="from-sky-50 via-white to-emerald-50 flex items-center justify-center px-6">
+    <div className="from-sky-50 via-white to-emerald-50 flex min-h-screen items-start sm:items-center justify-center px-3 sm:px-6 pt-2 sm:pt-6 pb-4">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl bg-white shadow-xl p-8 border border-slate-100">
-          <div className="text-center mb-8">
-            <div className="text-3xl font-semibold text-slate-800">
+        <div className="rounded-2xl sm:rounded-3xl bg-white shadow-xl p-4 sm:p-8 border border-slate-100">
+          <div className="text-center mb-4 sm:mb-8">
+            <div className="text-2xl sm:text-3xl font-semibold text-slate-800">
               🌿 Habit Flow
             </div>
             <p className="mt-2 text-sm text-slate-500">
@@ -54,7 +54,7 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSignup} className="space-y-5">
+          <form onSubmit={handleSignup} className="space-y-4 sm:space-y-5">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 이메일
@@ -65,7 +65,7 @@ export default function SignupPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
               />
             </div>
 
@@ -80,7 +80,7 @@ export default function SignupPage() {
                 placeholder="6자 이상 입력"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
               />
             </div>
 
@@ -93,13 +93,13 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-slate-900 text-white py-3 text-sm font-medium hover:bg-slate-800 transition disabled:opacity-60"
+              className="w-full rounded-xl bg-slate-900 text-white py-2.5 sm:py-3 text-sm font-medium hover:bg-slate-800 transition disabled:opacity-60"
             >
               {loading ? "가입 중..." : "회원가입"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-4 sm:mt-6 text-center text-sm text-slate-500">
             이미 계정이 있으신가요?{" "}
             <a href="/login" className="text-slate-800 font-medium hover:underline">
               로그인

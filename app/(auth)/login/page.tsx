@@ -34,13 +34,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="from-sky-50 via-white to-emerald-50 flex items-center justify-center px-6">
+    <div className="from-sky-50 via-white to-emerald-50 flex min-h-screen items-start sm:items-center justify-center px-3 sm:px-6 pt-2 sm:pt-6 pb-4">
       <div className="w-full max-w-md">
         {/* Card */}
-        <div className="rounded-3xl bg-white shadow-xl p-8 border border-slate-100">
+        <div className="rounded-2xl sm:rounded-3xl bg-white shadow-xl p-4 sm:p-8 border border-slate-100">
           {/* Logo / Title */}
-          <div className="text-center mb-8">
-            <div className="text-3xl font-semibold text-slate-800">
+          <div className="text-center mb-4 sm:mb-8">
+            <div className="text-2xl sm:text-3xl font-semibold text-slate-800">
               🌿 Happy Loutine
             </div>
             <p className="mt-2 text-sm text-slate-500">
@@ -49,7 +49,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
               />
             </div>
 
@@ -76,7 +76,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
               />
             </div>
 
@@ -91,14 +91,14 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-slate-900 text-white py-3 text-sm font-medium hover:bg-slate-800 transition disabled:opacity-60"
+              className="w-full rounded-xl bg-slate-900 text-white py-2.5 sm:py-3 text-sm font-medium hover:bg-slate-800 transition disabled:opacity-60"
             >
               {loading ? "로그인 중..." : "로그인"}
             </button>
           </form>
 
           {/* Divider */}
-          <div className="my-6 flex items-center">
+          <div className="my-4 sm:my-6 flex items-center">
             <div className="h-px flex-1 bg-slate-200" />
             <span className="mx-3 text-xs text-slate-400">또는</span>
             <div className="h-px flex-1 bg-slate-200" />
@@ -114,13 +114,13 @@ export default function LoginPage() {
                 },
               });
             }}
-            className="w-full rounded-xl border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50 transition"
+            className="w-full rounded-xl border border-slate-200 py-2.5 sm:py-3 text-sm font-medium hover:bg-slate-50 transition"
           >
             Google로 로그인
           </button>
 
           {/* Signup */}
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-4 sm:mt-6 text-center text-sm text-slate-500">
             아직 계정이 없으신가요?{" "}
             <a
               href="/signup"

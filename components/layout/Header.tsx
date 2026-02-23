@@ -5,12 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { LogOut } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const menus = [
     { href: "/home", label: "Home" },
@@ -18,12 +20,32 @@ export function Header() {
     { href: "/myhabit", label: "My Routines" },
   ];
 
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setIsAuthenticated(Boolean(data.session));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session));
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
   const onSignOut = async () => {
     if (isSigningOut) return;
     setIsSigningOut(true);
     try {
-      const supabase = createClient();
       await supabase.auth.signOut();
+      setIsAuthenticated(false);
       router.replace("/login");
       router.refresh();
     } finally {
@@ -85,19 +107,21 @@ export function Header() {
         })}
       </ul>
 
-      <button
-        type="button"
-        onClick={onSignOut}
-        disabled={isSigningOut}
-        className={cn(
-          "ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-border",
-          "text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-        )}
-        aria-label="로그아웃"
-        title="로그아웃"
-      >
-        <LogOut className="h-4 w-4" />
-      </button>
+      {isAuthenticated ? (
+        <button
+          type="button"
+          onClick={onSignOut}
+          disabled={isSigningOut}
+          className={cn(
+            "ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-border",
+            "text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          )}
+          aria-label="로그아웃"
+          title="로그아웃"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      ) : null}
     </header>
   );
 }
