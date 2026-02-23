@@ -1,4 +1,5 @@
 export type HabitTime = "morning" | "afternoon" | "evening";
+export type DayKey = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
 export type TodayHabitDTO = {
   id: string;
@@ -14,6 +15,22 @@ export type TodayHabitDTO = {
   done: boolean; // ✅ habit_logs에서 합쳐서 내려준 값
   log_date: string; // ✅ YYYY-MM-DD
 };
+
+export type WeeklyHabitDTO = {
+  id: string;
+  name: string;
+  weekly_target: number;
+  icon: string;
+  color: string;
+  checked: Partial<Record<DayKey, boolean>>;
+};
+
+export type WeeklyHabitsResponseDTO = {
+  weekStart: string;
+  weekEnd: string;
+  habits: WeeklyHabitDTO[];
+};
+
 export async function fetchTodayHabits(): Promise<TodayHabitDTO[]> {
   const res = await fetch(`/api/habits/today`, {
     method: "GET",
@@ -22,4 +39,14 @@ export async function fetchTodayHabits(): Promise<TodayHabitDTO[]> {
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? "Failed to fetch habits");
   return json.habits as TodayHabitDTO[];
+}
+
+export async function fetchWeeklyHabits(): Promise<WeeklyHabitsResponseDTO> {
+  const res = await fetch(`/api/habits/weekly`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Failed to fetch weekly habits");
+  return json as WeeklyHabitsResponseDTO;
 }

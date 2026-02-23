@@ -1,140 +1,71 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { DayKey, WeeklyHabitDTO } from "@/lib/habits/api";
+import { useWeeklyHabits } from "@/lib/habits/useWeeklyHabits";
 
-type DayKey = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 const DAYS: DayKey[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-type Habit = {
-  id: string;
-  title: string;
-  emoji: string;
-  cadenceLabel: string; // "Everyday" | "5 days per week" ...
-  colorClass:
-    | "bg-rose-200"
-    | "bg-emerald-200"
-    | "bg-indigo-200"
-    | "bg-sky-200"
-    | "bg-orange-200";
-  checked: Partial<Record<DayKey, boolean>>;
-};
-
-const HABITS: Habit[] = [
-  {
-    id: "1",
-    title: "Set Small Goals",
-    emoji: "🎯",
-    cadenceLabel: "Everyday",
-    colorClass: "bg-rose-200",
-    checked: {
-      Mon: true,
-      Tue: true,
-      Wed: true,
-      Thu: true,
-      Fri: true,
-      Sat: true,
-    },
-  },
-  {
-    id: "2",
-    title: "Meditation",
-    emoji: "😇",
-    cadenceLabel: "5 days per week",
-    colorClass: "bg-emerald-200",
-    checked: { Mon: true, Tue: true, Wed: true, Fri: true },
-  },
-  {
-    id: "3",
-    title: "Work",
-    emoji: "🏆",
-    cadenceLabel: "Everyday",
-    colorClass: "bg-indigo-200",
-    checked: {
-      Mon: true,
-      Tue: true,
-      Wed: true,
-      Thu: true,
-      Fri: true,
-      Sat: true,
-    },
-  },
-  {
-    id: "4",
-    title: "Sleep Over 8h",
-    emoji: "😴",
-    cadenceLabel: "Everyday",
-    colorClass: "bg-sky-200",
-    checked: {
-      Mon: true,
-      Tue: true,
-      Wed: true,
-      Thu: true,
-      Fri: true,
-      Sat: true,
-      Sun: true,
-    },
-  },
-  {
-    id: "5",
-    title: "Basketball",
-    emoji: "🏀",
-    cadenceLabel: "5 days per week",
-    colorClass: "bg-orange-200",
-    checked: { Mon: true, Wed: true, Fri: true, Sat: true },
-  },
-];
+function getCadenceLabel(weeklyTarget: number) {
+  if (weeklyTarget >= 7) return "Everyday";
+  return `${weeklyTarget} days per week`;
+}
 
 export function WeeklyTabContent() {
-  const [habits, setHabits] = React.useState<Habit[]>(HABITS);
+  const { data, isLoading, isError } = useWeeklyHabits();
 
-  const toggle = (habitId: string, day: DayKey) => {
-    setHabits((prev) =>
-      prev.map((h) => {
-        if (h.id !== habitId) return h;
-        const next = !Boolean(h.checked[day]);
-        return { ...h, checked: { ...h.checked, [day]: next } };
-      })
+  if (isLoading) {
+    return (
+      <div className="w-full p-4 text-sm text-muted-foreground">
+        Loading weekly habits...
+      </div>
     );
-  };
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full p-4 text-sm text-red-500">
+        Failed to load weekly habits.
+      </div>
+    );
+  }
+
+  const habits = data?.habits ?? [];
 
   return (
     <div className="w-full space-y-3 p-3">
+      {habits.length === 0 ? (
+        <div className="p-4 text-sm text-muted-foreground">
+          No habits yet for this week.
+        </div>
+      ) : null}
       {habits.map((habit) => (
-        <HabitCard key={habit.id} habit={habit} onToggle={toggle} />
+        <HabitCard key={habit.id} habit={habit} />
       ))}
     </div>
   );
 }
 
-function HabitCard({
-  habit,
-  onToggle,
-}: {
-  habit: Habit;
-  onToggle: (habitId: string, day: DayKey) => void;
-}) {
+function HabitCard({ habit }: { habit: WeeklyHabitDTO }) {
   return (
     <Card className="rounded-2xl border bg-white/90 p-4 shadow-sm gap-0">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{habit.emoji}</span>
+          <span className="text-lg">{habit.icon}</span>
           <div className="text-[15px] font-semibold text-foreground">
-            {habit.title}
+            {habit.name}
           </div>
         </div>
 
         <div className="text-sm text-muted-foreground">
-          {habit.cadenceLabel}
+          {getCadenceLabel(habit.weekly_target)}
         </div>
       </div>
       <Separator className="my-1" />
 
-      {/* Week row */}
       <div className="">
         <div className="grid grid-cols-7 gap-3">
           {DAYS.map((day) => (
@@ -149,9 +80,8 @@ function HabitCard({
               </div>
 
               <DayDot
-                checkedProfessionColor={habit.colorClass}
+                checkedColor={habit.color}
                 checked={Boolean(habit.checked[day])}
-                onClick={() => onToggle(habit.id, day)}
               />
             </div>
           ))}
@@ -163,24 +93,21 @@ function HabitCard({
 
 function DayDot({
   checked,
-  onClick,
-  checkedProfessionColor,
+  checkedColor,
 }: {
   checked: boolean;
-  onClick: () => void;
-  checkedProfessionColor: Habit["colorClass"];
+  checkedColor: string;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      disabled
       className={cn(
         "relative grid h-8 w-8 sm:h-11 sm:w-11 place-items-center rounded-full border transition",
         "active:scale-[0.98]",
-        checked
-          ? cn(checkedProfessionColor, "border-transparent")
-          : "bg-white border-border"
+        checked ? "border-transparent" : "bg-white border-border"
       )}
+      style={checked ? { backgroundColor: checkedColor } : undefined}
       aria-pressed={checked}
     >
       {checked ? (
