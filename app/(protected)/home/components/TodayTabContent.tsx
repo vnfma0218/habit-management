@@ -288,8 +288,6 @@ export function TodayTabContent({
     queryFn: () => fetchTodayHabits({ userId, date }),
   });
 
-  console.log("habits", habits);
-
   const habitsById = useMemo(() => {
     const m = new Map<string, TodayHabitDTO>();
     habits.forEach((h) => m.set(h.id, h));
