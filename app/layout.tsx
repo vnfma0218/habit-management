@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,9 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-          <div
-            className="
+        <ReactQueryProvider>
+          <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+            <div
+              className="
             flex min-h-screen w-full max-w-3xl flex-col 
             items-center 
             px-4 py-8                 /* ✅ 모바일 기본 */
@@ -40,20 +42,21 @@ export default function RootLayout({
             bg-white dark:bg-black 
             sm:items-start
           "
-          >
-            <Header />
-            <main
-              className="
+            >
+              <Header />
+              <main
+                className="
               mt-8 w-full 
               sm:px-6     /* 태블릿 */
               md:px-12    /* 데스크톱 */
             "
-            >
-              {children}
-            </main>
+              >
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
-        <Toaster position="top-center" />
+          <Toaster position="top-center" />
+        </ReactQueryProvider>
       </body>
     </html>
   );

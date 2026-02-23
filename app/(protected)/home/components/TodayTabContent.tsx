@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 import {
   DndContext,
@@ -22,16 +23,26 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type HabitTime = "morning" | "afternoon" | "evening";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-type Habit = {
+/* =========================
+ * Types (DB 스키마 기반)
+ * ========================= */
+export type HabitTime = "morning" | "afternoon" | "evening";
+
+export type TodayHabitDTO = {
   id: string;
   name: string;
+  goal: string | null;
+  weekly_target: number;
+  time_slot: HabitTime;
+  time_text: string | null;
   icon: string;
-  bg: string;
-  done: boolean;
-  time: HabitTime;
-  order: number; // ✅ 시간대 내부 order
+  color: string;
+  order_in_time: number;
+  is_active: boolean;
+  done: boolean; // ✅ habit_logs merge 결과
+  log_date: string; // ✅ YYYY-MM-DD (서버가 내려줌)
 };
 
 const TIME_LABEL: Record<HabitTime, string> = {
@@ -42,54 +53,72 @@ const TIME_LABEL: Record<HabitTime, string> = {
 
 const TIME_ORDER: HabitTime[] = ["morning", "afternoon", "evening"];
 
-const MOCK_HABITS: Habit[] = [
-  {
-    id: "1",
-    name: "물 2L 마시기",
-    icon: "💧",
-    bg: "bg-sky-100",
-    done: false,
-    time: "morning",
-    order: 10,
-  },
-  {
-    id: "2",
-    name: "10분 스트레칭",
-    icon: "🧘",
-    bg: "bg-emerald-100",
-    done: true,
-    time: "morning",
-    order: 20,
-  },
-  {
-    id: "12",
-    name: "헬스장가기",
-    icon: "🧘",
-    bg: "bg-[#FFD8BE]",
-    done: true,
-    time: "morning",
-    order: 30,
-  },
-  {
-    id: "3",
-    name: "30분 산책",
-    icon: "🚶",
-    bg: "bg-amber-100",
-    done: false,
-    time: "afternoon",
-    order: 10,
-  },
-  {
-    id: "4",
-    name: "독서 20분",
-    icon: "📚",
-    bg: "bg-violet-100",
-    done: false,
-    time: "evening",
-    order: 10,
-  },
-];
+/* =========================
+ * React Query Keys
+ * ========================= */
+const habitKeys = {
+  today: (userId: string, date?: string) =>
+    ["habits", "today", userId, date ?? "today"] as const,
+};
 
+/* =========================
+ * API functions (Route Handler 호출)
+ * ========================= */
+async function fetchTodayHabits(params: {
+  userId: string;
+  date?: string; // YYYY-MM-DD
+}): Promise<TodayHabitDTO[]> {
+  const q = new URLSearchParams({ userId: params.userId });
+  if (params.date) q.set("date", params.date);
+
+  const res = await fetch(`/api/habits/today?${q.toString()}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Failed to fetch habits");
+  return json.habits as TodayHabitDTO[];
+}
+
+async function patchHabitDone(params: {
+  userId: string;
+  habitId: string;
+  done: boolean;
+  log_date: string; // YYYY-MM-DD
+}) {
+  const res = await fetch(`/api/habits/${params.habitId}/done`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId: params.userId,
+      done: params.done,
+      log_date: params.log_date,
+    }),
+  });
+
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Failed to update done");
+  return json.log as { habit_id: string; is_done: boolean; log_date: string };
+}
+
+async function postReorder(params: {
+  userId: string;
+  items: Array<{ id: string; time_slot: HabitTime; order_in_time: number }>;
+}) {
+  const res = await fetch(`/api/habits/reorder`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Failed to reorder");
+  return json as { ok: true };
+}
+
+/* =========================
+ * UI helpers
+ * ========================= */
 function TimeDivider({ label }: { label: string }) {
   return (
     <div className="relative my-4 flex items-center">
@@ -136,8 +165,8 @@ function SortableHabitRow({
   habit,
   onToggleDone,
 }: {
-  habit: Habit;
-  onToggleDone: (id: string) => void;
+  habit: TodayHabitDTO;
+  onToggleDone: (id: string, nextDone: boolean, log_date: string) => void;
 }) {
   const {
     attributes,
@@ -156,16 +185,16 @@ function SortableHabitRow({
   return (
     <div ref={setNodeRef} style={style}>
       <div
+        style={{ backgroundColor: habit.color }}
         className={cn(
           "w-full rounded-2xl px-4 py-3 text-left",
           "flex items-center gap-3",
           "border border-black/5",
           "transition active:scale-[0.99]",
-          habit.bg,
           isDragging && "opacity-60"
         )}
       >
-        {/* drag handle (모바일에서도 잡기 좋게) */}
+        {/* drag handle */}
         <button
           type="button"
           className="touch-none h-10 w-8 shrink-0 grid place-items-center rounded-xl bg-white/40"
@@ -186,23 +215,31 @@ function SortableHabitRow({
           <div className="truncate text-[15px] font-medium text-slate-900">
             {habit.name}
           </div>
+          {habit.time_text ? (
+            <div className="mt-0.5 truncate text-xs text-slate-600">
+              {habit.time_text}
+            </div>
+          ) : null}
         </div>
 
         {/* check */}
-        <CheckButton done={habit.done} onClick={() => onToggleDone(habit.id)} />
+        <CheckButton
+          done={habit.done}
+          onClick={() => onToggleDone(habit.id, !habit.done, habit.log_date)}
+        />
       </div>
     </div>
   );
 }
 
-function OverlayRow({ habit }: { habit: Habit }) {
+function OverlayRow({ habit }: { habit: TodayHabitDTO }) {
   return (
     <div
       className={cn(
         "w-[min(520px,calc(100vw-2rem))] rounded-2xl px-4 py-3",
         "flex items-center gap-3",
         "border border-black/10 shadow-lg",
-        habit.bg
+        habit.color
       )}
     >
       <div className="h-10 w-8 shrink-0 grid place-items-center rounded-xl bg-white/40">
@@ -221,34 +258,53 @@ function OverlayRow({ habit }: { habit: Habit }) {
   );
 }
 
-export function TodayTabContent() {
-  const [habits, setHabits] = useState<Habit[]>(MOCK_HABITS);
+/* =========================
+ * Main Component
+ * ========================= */
+export function TodayTabContent({
+  userId,
+  date, // 선택: YYYY-MM-DD
+}: {
+  userId: string;
+  date?: string;
+}) {
+  const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // ✅ 모바일 포함 센서 세팅
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 }, // 살짝 움직여야 드래그 시작
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 120, tolerance: 8 }, // 롱프레스 느낌(모바일)
+      activationConstraint: { delay: 120, tolerance: 8 },
     })
   );
 
+  // ✅ Query: 오늘 습관 + done(log) merge 데이터
+  const {
+    data: habits = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: habitKeys.today(userId, date),
+    queryFn: () => fetchTodayHabits({ userId, date }),
+  });
+
+  console.log("habits", habits);
+
   const habitsById = useMemo(() => {
-    const m = new Map<string, Habit>();
+    const m = new Map<string, TodayHabitDTO>();
     habits.forEach((h) => m.set(h.id, h));
     return m;
   }, [habits]);
 
   const grouped = useMemo(() => {
-    const g: Record<HabitTime, Habit[]> = {
+    const g: Record<HabitTime, TodayHabitDTO[]> = {
       morning: [],
       afternoon: [],
       evening: [],
     };
-    for (const h of habits) g[h.time].push(h);
-    for (const t of TIME_ORDER) g[t].sort((a, b) => a.order - b.order);
+    for (const h of habits) g[h.time_slot].push(h);
+    for (const t of TIME_ORDER)
+      g[t].sort((a, b) => a.order_in_time - b.order_in_time);
     return g;
   }, [habits]);
 
@@ -257,20 +313,70 @@ export function TodayTabContent() {
     [habits]
   );
 
-  const onToggleDone = (id: string) => {
-    setHabits((prev) =>
-      prev.map((h) => (h.id === id ? { ...h, done: !h.done } : h))
-    );
-  };
+  // ✅ done 토글: 낙관적 업데이트
+  const toggleDoneMut = useMutation({
+    mutationFn: (p: { habitId: string; done: boolean; log_date: string }) =>
+      patchHabitDone({ userId, ...p }),
+    onMutate: async (vars) => {
+      await qc.cancelQueries({ queryKey: habitKeys.today(userId, date) });
 
-  const normalizeOrders = (time: HabitTime, list: Habit[]) => {
-    // order를 10,20,30…로 재부여 (삽입/이동에 강함)
-    const next = list.map((h, idx) => ({ ...h, order: (idx + 1) * 10 }));
-    setHabits((prev) => {
-      const rest = prev.filter((h) => h.time !== time);
-      return [...rest, ...next];
-    });
-  };
+      const prev = qc.getQueryData<TodayHabitDTO[]>(
+        habitKeys.today(userId, date)
+      );
+      if (!prev) return { prev };
+
+      qc.setQueryData<TodayHabitDTO[]>(habitKeys.today(userId, date), (old) => {
+        if (!old) return old;
+        return old.map((h) =>
+          h.id === vars.habitId ? { ...h, done: vars.done } : h
+        );
+      });
+
+      return { prev };
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(habitKeys.today(userId, date), ctx.prev);
+      toast.error(err instanceof Error ? err.message : "완료 처리 실패");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: habitKeys.today(userId, date) });
+    },
+  });
+
+  // ✅ reorder: 낙관적 업데이트
+  const reorderMut = useMutation({
+    mutationFn: (
+      items: Array<{ id: string; time_slot: HabitTime; order_in_time: number }>
+    ) => postReorder({ userId, items }),
+    onMutate: async (items) => {
+      await qc.cancelQueries({ queryKey: habitKeys.today(userId, date) });
+
+      const prev = qc.getQueryData<TodayHabitDTO[]>(
+        habitKeys.today(userId, date)
+      );
+      if (!prev) return { prev };
+
+      const map = new Map(items.map((it) => [it.id, it]));
+      qc.setQueryData<TodayHabitDTO[]>(habitKeys.today(userId, date), (old) => {
+        if (!old) return old;
+        return old.map((h) => {
+          const it = map.get(h.id);
+          return it
+            ? { ...h, time_slot: it.time_slot, order_in_time: it.order_in_time }
+            : h;
+        });
+      });
+
+      return { prev };
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(habitKeys.today(userId, date), ctx.prev);
+      toast.error(err instanceof Error ? err.message : "순서 저장 실패");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: habitKeys.today(userId, date) });
+    },
+  });
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -282,19 +388,34 @@ export function TodayTabContent() {
     if (!activeHabit || !overHabit) return;
 
     // ✅ 같은 시간대에서만 reorder 허용
-    if (activeHabit.time !== overHabit.time) return;
+    if (activeHabit.time_slot !== overHabit.time_slot) return;
 
-    const time = activeHabit.time;
+    const time = activeHabit.time_slot;
     const list = grouped[time];
+
     const oldIndex = list.findIndex((h) => h.id === activeHabit.id);
     const newIndex = list.findIndex((h) => h.id === overHabit.id);
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
 
-    const moved = arrayMove(list, oldIndex, newIndex);
-    normalizeOrders(time, moved);
+    // ✅ 새 순서를 10,20,30… 부여
+    const moved = arrayMove(list, oldIndex, newIndex).map((h, idx) => ({
+      id: h.id,
+      time_slot: time,
+      order_in_time: (idx + 1) * 10,
+    }));
+
+    reorderMut.mutate(moved);
   };
 
   const activeHabit = activeId ? habitsById.get(activeId) : null;
+
+  if (isLoading) {
+    return <div className="text-sm text-slate-500">불러오는 중…</div>;
+  }
+
+  if (isError) {
+    return <div className="text-sm text-red-600">불러오기 실패</div>;
+  }
 
   return (
     <div className="w-full">
@@ -310,10 +431,7 @@ export function TodayTabContent() {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragStart={(e) => {
-          console.log("start");
-          setActiveId(String(e.active.id));
-        }}
+        onDragStart={(e) => setActiveId(String(e.active.id))}
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
@@ -326,7 +444,6 @@ export function TodayTabContent() {
               <div key={time}>
                 <TimeDivider label={TIME_LABEL[time]} />
 
-                {/* ✅ 섹션별 SortableContext: “그 그룹 내부 정렬” */}
                 <SortableContext
                   items={items.map((h) => h.id)}
                   strategy={verticalListSortingStrategy}
@@ -336,7 +453,13 @@ export function TodayTabContent() {
                       <SortableHabitRow
                         key={habit.id}
                         habit={habit}
-                        onToggleDone={onToggleDone}
+                        onToggleDone={(id, nextDone, log_date) =>
+                          toggleDoneMut.mutate({
+                            habitId: id,
+                            done: nextDone,
+                            log_date,
+                          })
+                        }
                       />
                     ))}
                   </div>
