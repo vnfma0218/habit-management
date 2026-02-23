@@ -2,10 +2,9 @@
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Toaster } from "@/components/ui/sonner";
 import { PASTEL_COLORS } from "@/lib/color";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 const DEFAULT_ICONS = [
@@ -290,7 +289,7 @@ export default function New() {
 
           <Field orientation="horizontal">
             <Button variant="primary" type="submit" className="w-full">
-              습관 시작하기
+              루틴 시작하기
             </Button>
           </Field>
         </FieldGroup>

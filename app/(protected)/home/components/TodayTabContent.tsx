@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, GripVertical } from "lucide-react";
+import { Check, GripVertical, RotateCcw, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -52,6 +52,7 @@ const TIME_LABEL: Record<HabitTime, string> = {
 };
 
 const TIME_ORDER: HabitTime[] = ["morning", "afternoon", "evening"];
+const EXCLUDED_STORAGE_PREFIX = "today_excluded:";
 
 /* =========================
  * React Query Keys
@@ -116,6 +117,35 @@ async function postReorder(params: {
   return json as { ok: true };
 }
 
+function toISODate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function getExcludedKey(dateKey: string) {
+  return `${EXCLUDED_STORAGE_PREFIX}${dateKey}`;
+}
+
+function readExcludedIds(dateKey: string) {
+  if (typeof window === "undefined") return new Set<string>();
+  try {
+    const raw = localStorage.getItem(getExcludedKey(dateKey));
+    if (!raw) return new Set<string>();
+    const parsed = JSON.parse(raw) as string[];
+    if (!Array.isArray(parsed)) return new Set<string>();
+    return new Set(parsed);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function writeExcludedIds(dateKey: string, ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    getExcludedKey(dateKey),
+    JSON.stringify(Array.from(ids))
+  );
+}
+
 /* =========================
  * UI helpers
  * ========================= */
@@ -126,6 +156,45 @@ function TimeDivider({ label }: { label: string }) {
       <span className="mx-3 text-xs font-medium text-slate-500">{label}</span>
       <div className="h-px flex-1 bg-slate-200" />
     </div>
+  );
+}
+
+function ExcludeButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className={cn(
+        "h-8 w-8 shrink-0 rounded-lg grid place-items-center",
+        "border border-slate-900/10 bg-white/60 text-slate-700",
+        "hover:bg-white"
+      )}
+      aria-label="오늘 제외"
+      title="오늘 제외"
+    >
+      <EyeOff className="h-4 w-4" />
+    </button>
+  );
+}
+
+function RestoreButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "h-8 w-8 shrink-0 rounded-lg inline-flex items-center justify-center",
+        "border border-slate-900/10 bg-white/70 text-slate-700",
+        "hover:bg-white"
+      )}
+      aria-label="루틴 복구"
+      title="복구"
+    >
+      <RotateCcw className="h-4 w-4" />
+    </button>
   );
 }
 
@@ -164,9 +233,11 @@ function CheckButton({
 function SortableHabitRow({
   habit,
   onToggleDone,
+  onExclude,
 }: {
   habit: TodayHabitDTO;
   onToggleDone: (id: string, nextDone: boolean, log_date: string) => void;
+  onExclude: (id: string) => void;
 }) {
   const {
     attributes,
@@ -227,7 +298,42 @@ function SortableHabitRow({
           done={habit.done}
           onClick={() => onToggleDone(habit.id, !habit.done, habit.log_date)}
         />
+        <ExcludeButton onClick={() => onExclude(habit.id)} />
       </div>
+    </div>
+  );
+}
+
+function ExcludedHabitRow({
+  habit,
+  onRestore,
+}: {
+  habit: TodayHabitDTO;
+  onRestore: (id: string) => void;
+}) {
+  return (
+    <div
+      style={{ backgroundColor: habit.color }}
+      className={cn(
+        "w-full rounded-2xl px-4 py-3 text-left",
+        "flex items-center gap-3",
+        "border border-black/5 opacity-90"
+      )}
+    >
+      <div className="h-10 w-10 shrink-0 rounded-xl bg-white/60 grid place-items-center text-xl">
+        {habit.icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[15px] font-medium text-slate-900">
+          {habit.name}
+        </div>
+        {habit.time_text ? (
+          <div className="mt-0.5 truncate text-xs text-slate-600">
+            {habit.time_text}
+          </div>
+        ) : null}
+      </div>
+      <RestoreButton onClick={() => onRestore(habit.id)} />
     </div>
   );
 }
@@ -270,6 +376,14 @@ export function TodayTabContent({
 }) {
   const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const todayKey = date ?? toISODate(new Date());
+  const [excludedState, setExcludedState] = useState<{
+    dateKey: string;
+    ids: Set<string>;
+  }>(() => ({
+    dateKey: todayKey,
+    ids: readExcludedIds(todayKey),
+  }));
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -278,7 +392,7 @@ export function TodayTabContent({
     })
   );
 
-  // ✅ Query: 오늘 습관 + done(log) merge 데이터
+  // ✅ Query: 오늘 루틴 + done(log) merge 데이터
   const {
     data: habits = [],
     isLoading,
@@ -287,6 +401,35 @@ export function TodayTabContent({
     queryKey: habitKeys.today(userId, date),
     queryFn: () => fetchTodayHabits({ userId, date }),
   });
+
+  const excludedIds =
+    excludedState.dateKey === todayKey
+      ? excludedState.ids
+      : readExcludedIds(todayKey);
+
+  const excludeHabitForToday = (habitId: string) => {
+    setExcludedState((prev) => {
+      const base =
+        prev.dateKey === todayKey ? prev.ids : readExcludedIds(todayKey);
+      if (base.has(habitId)) return { dateKey: todayKey, ids: base };
+      const next = new Set(base);
+      next.add(habitId);
+      writeExcludedIds(todayKey, next);
+      return { dateKey: todayKey, ids: next };
+    });
+  };
+
+  const restoreHabitForToday = (habitId: string) => {
+    setExcludedState((prev) => {
+      const base =
+        prev.dateKey === todayKey ? prev.ids : readExcludedIds(todayKey);
+      if (!base.has(habitId)) return { dateKey: todayKey, ids: base };
+      const next = new Set(base);
+      next.delete(habitId);
+      writeExcludedIds(todayKey, next);
+      return { dateKey: todayKey, ids: next };
+    });
+  };
 
   const habitsById = useMemo(() => {
     const m = new Map<string, TodayHabitDTO>();
@@ -300,15 +443,38 @@ export function TodayTabContent({
       afternoon: [],
       evening: [],
     };
-    for (const h of habits) g[h.time_slot].push(h);
+    for (const h of habits) {
+      if (excludedIds.has(h.id)) continue;
+      g[h.time_slot].push(h);
+    }
     for (const t of TIME_ORDER)
       g[t].sort((a, b) => a.order_in_time - b.order_in_time);
     return g;
-  }, [habits]);
+  }, [habits, excludedIds]);
+
+  const excludedHabits = useMemo(
+    () =>
+      habits
+        .filter((h) => excludedIds.has(h.id))
+        .sort((a, b) => {
+          if (a.time_slot === b.time_slot) {
+            return a.order_in_time - b.order_in_time;
+          }
+          return (
+            TIME_ORDER.indexOf(a.time_slot) - TIME_ORDER.indexOf(b.time_slot)
+          );
+        }),
+    [habits, excludedIds]
+  );
+
+  const visibleHabits = useMemo(
+    () => habits.filter((h) => !excludedIds.has(h.id)),
+    [habits, excludedIds]
+  );
 
   const completed = useMemo(
-    () => habits.filter((h) => h.done).length,
-    [habits]
+    () => visibleHabits.filter((h) => h.done).length,
+    [visibleHabits]
   );
 
   // ✅ done 토글: 낙관적 업데이트
@@ -421,7 +587,7 @@ export function TodayTabContent({
         <div>
           <div className="text-lg font-semibold text-slate-900">오늘 루틴</div>
           <div className="mt-1 text-sm text-slate-600">
-            완료 {completed} / {habits.length}
+            완료 {completed} / {visibleHabits.length}
           </div>
         </div>
       </div>
@@ -451,6 +617,7 @@ export function TodayTabContent({
                       <SortableHabitRow
                         key={habit.id}
                         habit={habit}
+                        onExclude={excludeHabitForToday}
                         onToggleDone={(id, nextDone, log_date) =>
                           toggleDoneMut.mutate({
                             habitId: id,
@@ -471,6 +638,21 @@ export function TodayTabContent({
           {activeHabit ? <OverlayRow habit={activeHabit} /> : null}
         </DragOverlay>
       </DndContext>
+
+      {excludedHabits.length > 0 ? (
+        <div className="mt-6">
+          <TimeDivider label="오늘 제외한 루틴" />
+          <div className="flex flex-col gap-3">
+            {excludedHabits.map((habit) => (
+              <ExcludedHabitRow
+                key={habit.id}
+                habit={habit}
+                onRestore={restoreHabitForToday}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
