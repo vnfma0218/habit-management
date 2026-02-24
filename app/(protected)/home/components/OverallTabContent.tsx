@@ -146,8 +146,57 @@ export function OverallTabContent() {
     [dayData]
   );
 
+  const streakHabits = useMemo(
+    () => (weeklyGoalData?.habits ?? []).filter((habit) => habit.streakWeeks > 0),
+    [weeklyGoalData]
+  );
+
   return (
     <div className="space-y-4">
+      <Card className="border bg-white/90 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">루틴 연속 달성</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isWeeklyGoalLoading ? (
+            <div className="text-sm text-slate-500">연속 달성 데이터를 불러오는 중...</div>
+          ) : null}
+          {isWeeklyGoalError ? (
+            <div className="text-sm text-red-600">연속 달성 데이터 로드에 실패했습니다.</div>
+          ) : null}
+
+          {!isWeeklyGoalLoading && !isWeeklyGoalError ? (
+            <>
+              {streakHabits.length === 0 ? (
+                <div className="text-sm text-slate-500">연속 달성 중인 루틴이 없습니다.</div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {streakHabits.map((habit) => (
+                    <div
+                      key={habit.id}
+                      className="rounded-xl border border-black/5 bg-emerald-50 p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-900">
+                          <span>{habit.icon}</span>
+                          <span className="truncate">{habit.name}</span>
+                        </div>
+                        <span className="text-xs text-emerald-700">
+                          {habit.currentAchieved ? "이번 주 달성" : "진행 중"}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-lg font-semibold text-emerald-700">
+                        {habit.streakWeeks}주 연속
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : null}
+        </CardContent>
+      </Card>
+
       <Card className="border bg-white/90 shadow-sm">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">월간 달성 캘린더</CardTitle>

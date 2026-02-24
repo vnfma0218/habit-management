@@ -70,6 +70,8 @@ export type OverallWeeklyGoalHabitDTO = {
   completed: number;
   target: number;
   rate: number;
+  streakWeeks: number;
+  currentAchieved: boolean;
 };
 
 export type OverallWeeklyGoalsResponseDTO = {

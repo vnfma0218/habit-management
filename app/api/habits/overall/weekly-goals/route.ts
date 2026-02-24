@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentKSTDateString } from "@/lib/date/kst";
+import { getCurrentKSTDateString, shiftISODate } from "@/lib/date/kst";
 
 type TimeSlot = "morning" | "afternoon" | "evening";
 
@@ -31,6 +31,19 @@ function getWeekRangeFromDate(dateString: string) {
     end: end.toISOString().slice(0, 10),
   };
 }
+
+function getWeekStartFromISODate(dateString: string) {
+  const current = new Date(`${dateString}T00:00:00Z`);
+  const mondayOffset = (current.getUTCDay() + 6) % 7; // Mon=0 ... Sun=6
+  current.setUTCDate(current.getUTCDate() - mondayOffset);
+  return current.toISOString().slice(0, 10);
+}
+
+function progressRate(completed: number, target: number) {
+  return target > 0 ? Math.round((completed / target) * 100) : 0;
+}
+
+const STREAK_LOOKBACK_WEEKS = 26;
 
 export async function GET() {
   try {
@@ -73,40 +86,60 @@ export async function GET() {
       });
     }
 
+    const lookbackWeekStarts = Array.from(
+      { length: STREAK_LOOKBACK_WEEKS },
+      (_, idx) => shiftISODate(periodStart, -7 * idx)
+    );
+    const oldestWeekStart = lookbackWeekStarts[lookbackWeekStarts.length - 1];
+
     const { data: logs, error: logsError } = await supabase
       .from("habit_logs")
       .select("habit_id,log_date,is_done")
       .eq("user_id", userId)
-      .gte("log_date", periodStart)
+      .gte("log_date", oldestWeekStart)
       .lte("log_date", periodEnd)
       .eq("is_done", true)
       .in("habit_id", habitIds);
 
     if (logsError) throw logsError;
 
-    const completedCountMap = new Map<string, number>();
+    const weeklyCountMap = new Map<string, number>();
     const dedupe = new Set<string>();
     for (const log of logs ?? []) {
       const key = `${log.habit_id}:${log.log_date}`;
       if (dedupe.has(key)) continue;
       dedupe.add(key);
-      completedCountMap.set(
-        log.habit_id,
-        (completedCountMap.get(log.habit_id) ?? 0) + 1
-      );
+      const weekStart = getWeekStartFromISODate(log.log_date);
+      const weekKey = `${log.habit_id}:${weekStart}`;
+      weeklyCountMap.set(weekKey, (weeklyCountMap.get(weekKey) ?? 0) + 1);
     }
 
     const progressHabits = sortedHabits.map((habit) => {
-      const completed = completedCountMap.get(habit.id) ?? 0;
+      const currentWeekKey = `${habit.id}:${periodStart}`;
+      const completed = weeklyCountMap.get(currentWeekKey) ?? 0;
       const target = habit.weekly_target;
-      const rate = target > 0 ? Math.round((completed / target) * 100) : 0;
+      const currentAchieved = completed >= target;
+
+      let streakWeeks = currentAchieved ? 1 : 0;
+      for (const weekStart of lookbackWeekStarts.slice(1)) {
+        const key = `${habit.id}:${weekStart}`;
+        const weeklyCompleted = weeklyCountMap.get(key) ?? 0;
+        if (weeklyCompleted >= target) {
+          streakWeeks += 1;
+        } else {
+          break;
+        }
+      }
+
       return {
         id: habit.id,
         name: habit.name,
         icon: habit.icon,
         completed,
         target,
-        rate,
+        rate: progressRate(completed, target),
+        streakWeeks,
+        currentAchieved,
       };
     });
 
