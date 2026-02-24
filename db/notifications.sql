@@ -50,3 +50,6 @@ create policy "notification_subscriptions_delete_own"
   on public.notification_subscriptions
   for delete
   using (auth.uid() = user_id);
+
+
+-- ㅅㄷㄴㅅㄷㄴㅅ
