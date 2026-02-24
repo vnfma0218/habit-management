@@ -43,13 +43,10 @@ export default function RootLayout({
             sm:items-start
           "
             >
-              <Header />
               <main
-                className="
-              mt-8 w-full 
+                className="w-full 
               sm:px-6     /* 태블릿 */
-              md:px-12    /* 데스크톱 */
-            "
+              md:px-12    /* 데스크톱 */"
               >
                 {children}
               </main>

@@ -1,3 +1,4 @@
+import { Header } from "@/components/layout/Header";
 import { Toaster } from "@/components/ui/sonner";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -18,5 +19,16 @@ export default async function ProtectedLayout({
     redirect("/login");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <Header />
+      <div
+        className="
+      mt-8 
+    "
+      >
+        {children}
+      </div>
+    </>
+  );
 }

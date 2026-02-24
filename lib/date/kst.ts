@@ -31,6 +31,13 @@ export function getCurrentKSTMonthString() {
   return toKSTMonthString(new Date());
 }
 
+export function getCurrentKSTTimeString() {
+  const kst = toKSTDate(new Date());
+  const hours = pad2(kst.getUTCHours());
+  const minutes = pad2(kst.getUTCMinutes());
+  return `${hours}:${minutes}`;
+}
+
 export function parseMonthString(value: string) {
   const match = /^(\d{4})-(\d{2})$/.exec(value);
   if (!match) return null;

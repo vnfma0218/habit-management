@@ -12,6 +12,7 @@ import {
   OverallDayHabitDTO,
 } from "@/lib/habits/api";
 import { habitKeys } from "@/lib/habits/keys";
+import { NotificationSettingsCard } from "./NotificationSettingsCard";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIME_LABEL: Record<"morning" | "afternoon" | "evening", string> = {
@@ -342,6 +343,8 @@ export function OverallTabContent() {
           </p>
         </CardContent>
       </Card>
+
+      <NotificationSettingsCard />
     </div>
   );
 }
