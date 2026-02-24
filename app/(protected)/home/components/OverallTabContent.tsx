@@ -289,7 +289,7 @@ export function OverallTabContent() {
             </>
           ) : null}
           <p className="text-xs text-slate-500">
-            최근 7일 완료 횟수 기준으로 계산됩니다.
+            이번 주(월~일) 완료 횟수 기준으로 계산됩니다.
           </p>
         </CardContent>
       </Card>

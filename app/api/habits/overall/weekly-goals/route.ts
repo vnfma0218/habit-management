@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentKSTDateString, shiftISODate } from "@/lib/date/kst";
+import { getCurrentKSTDateString } from "@/lib/date/kst";
 
 type TimeSlot = "morning" | "afternoon" | "evening";
 
@@ -16,6 +16,22 @@ function getErrorMessage(error: unknown) {
     : "Failed to load weekly goal progress";
 }
 
+function getWeekRangeFromDate(dateString: string) {
+  const current = new Date(`${dateString}T00:00:00Z`);
+  const mondayOffset = (current.getUTCDay() + 6) % 7; // Mon=0 ... Sun=6
+
+  const start = new Date(current);
+  start.setUTCDate(start.getUTCDate() - mondayOffset);
+
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 6);
+
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -28,8 +44,8 @@ export async function GET() {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
 
-    const periodEnd = getCurrentKSTDateString();
-    const periodStart = shiftISODate(periodEnd, -6);
+    const today = getCurrentKSTDateString();
+    const { start: periodStart, end: periodEnd } = getWeekRangeFromDate(today);
 
     const { data: habits, error: habitsError } = await supabase
       .from("habits")
