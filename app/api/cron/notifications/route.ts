@@ -20,7 +20,7 @@ async function handleCron(req: Request) {
     .select("id,endpoint,p256dh,auth,last_sent_date")
     .eq("is_enabled", true)
     .eq("timezone", "Asia/Seoul")
-    .eq("reminder_time", nowTime);
+    .lte("reminder_time", nowTime);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
