@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { getCurrentKSTDateString } from "@/lib/date/kst";
 
 type DayKey = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+type TimeSlot = "morning" | "afternoon" | "evening";
 
 function toISODate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -53,8 +55,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
 
-    const startParam = searchParams.get("start");
-    const baseDate = startParam ? parseISODate(startParam) : new Date();
+    const startParam = searchParams.get("start") ?? getCurrentKSTDateString();
+    const baseDate = parseISODate(startParam);
 
     if (!baseDate) {
       return NextResponse.json(
@@ -79,7 +81,18 @@ export async function GET(req: Request) {
 
     if (habitsError) throw habitsError;
 
-    const habitIds = (habits ?? []).map((h) => h.id);
+    const timeOrder: Record<TimeSlot, number> = {
+      morning: 0,
+      afternoon: 1,
+      evening: 2,
+    };
+    const sortedHabits = [...(habits ?? [])].sort((a, b) => {
+      const timeGap = timeOrder[a.time_slot as TimeSlot] - timeOrder[b.time_slot as TimeSlot];
+      if (timeGap !== 0) return timeGap;
+      return a.order_in_time - b.order_in_time;
+    });
+
+    const habitIds = sortedHabits.map((h) => h.id);
     if (habitIds.length === 0) {
       return NextResponse.json({ weekStart, weekEnd, habits: [] });
     }
@@ -102,7 +115,7 @@ export async function GET(req: Request) {
       checkedMap.set(log.habit_id, dayState);
     }
 
-    const weeklyHabits = (habits ?? []).map((habit) => ({
+    const weeklyHabits = sortedHabits.map((habit) => ({
       id: habit.id,
       name: habit.name,
       weekly_target: habit.weekly_target,

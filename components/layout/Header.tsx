@@ -15,9 +15,9 @@ export function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const menus = [
-    { href: "/home", label: "Home" },
-    { href: "/new", label: "New" },
-    { href: "/myhabit", label: "My Routines" },
+    { href: "/home", label: "홈" },
+    { href: "/myhabit", label: "내 루틴" },
+    { href: "/new", label: "새 루틴" },
   ];
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export function Header() {
         <div className="text-slate-900">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="w-8 h-8"
+            className="w-6 h-6 sm:w-8 sm:h-8"
             viewBox="0 0 24 24"
             fill="none"
           >
@@ -96,6 +96,7 @@ export function Header() {
               <Link
                 href={menu.href}
                 className={cn(
+                  "text-sm sm:text-base",
                   "underline-offset-4",
                   isActive ? "underline decoration-2" : "no-underline"
                 )}
@@ -113,13 +114,13 @@ export function Header() {
           onClick={onSignOut}
           disabled={isSigningOut}
           className={cn(
-            "ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-border",
+            "ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md border border-border",
             "text-slate-700 hover:bg-slate-100 disabled:opacity-50"
           )}
           aria-label="로그아웃"
           title="로그아웃"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-3 w-3" />
         </button>
       ) : null}
     </header>

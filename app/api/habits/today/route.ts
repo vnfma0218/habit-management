@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { getCurrentKSTDateString } from "@/lib/date/kst";
 
-function toISODate(d: Date) {
-  // KST 기준이 필요하면 서버 타임존/혹은 date param으로 통일 추천
-  return d.toISOString().slice(0, 10);
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Failed to load habits";
 }
 
 export async function GET(req: Request) {
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
       data: { user },
     } = await supabase.auth.getUser();
     const userId = user?.id;
-    const date = searchParams.get("date") ?? toISODate(new Date());
+    const date = searchParams.get("date") ?? getCurrentKSTDateString();
 
     if (!userId) {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
@@ -55,10 +55,7 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json({ habits: merged });
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message ?? "Failed to load habits" },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
