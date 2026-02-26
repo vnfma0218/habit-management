@@ -50,7 +50,9 @@ function toMonthString(date: Date) {
 }
 
 function toDateString(date: Date) {
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(
+    date.getDate()
+  )}`;
 }
 
 function formatDateLabel(dateString: string) {
@@ -75,14 +77,15 @@ function buildMonthCells(currentMonth: Date, levelByDate: Map<string, number>) {
   const start = addDays(firstDay, -mondayIndex(firstDay));
   const end = addDays(lastDay, 6 - mondayIndex(lastDay));
 
-  const cells: Array<{ date: Date; inCurrentMonth: boolean; level: number }> = [];
+  const cells: Array<{ date: Date; inCurrentMonth: boolean; level: number }> =
+    [];
   for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
     const inCurrentMonth = cursor.getMonth() === currentMonth.getMonth();
     const dateString = toDateString(cursor);
     cells.push({
       date: cursor,
       inCurrentMonth,
-      level: inCurrentMonth ? (levelByDate.get(dateString) ?? 0) : 0,
+      level: inCurrentMonth ? levelByDate.get(dateString) ?? 0 : 0,
     });
   }
 
@@ -95,7 +98,10 @@ export function OverallTabContent() {
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const monthString = useMemo(() => toMonthString(currentMonth), [currentMonth]);
+  const monthString = useMemo(
+    () => toMonthString(currentMonth),
+    [currentMonth]
+  );
 
   const {
     data: monthData,
@@ -148,7 +154,8 @@ export function OverallTabContent() {
   );
 
   const streakHabits = useMemo(
-    () => (weeklyGoalData?.habits ?? []).filter((habit) => habit.streakWeeks > 0),
+    () =>
+      (weeklyGoalData?.habits ?? []).filter((habit) => habit.streakWeeks > 0),
     [weeklyGoalData]
   );
 
@@ -160,16 +167,22 @@ export function OverallTabContent() {
         </CardHeader>
         <CardContent>
           {isWeeklyGoalLoading ? (
-            <div className="text-sm text-slate-500">연속 달성 데이터를 불러오는 중...</div>
+            <div className="text-sm text-slate-500">
+              연속 달성 데이터를 불러오는 중...
+            </div>
           ) : null}
           {isWeeklyGoalError ? (
-            <div className="text-sm text-red-600">연속 달성 데이터 로드에 실패했습니다.</div>
+            <div className="text-sm text-red-600">
+              연속 달성 데이터 로드에 실패했습니다.
+            </div>
           ) : null}
 
           {!isWeeklyGoalLoading && !isWeeklyGoalError ? (
             <>
               {streakHabits.length === 0 ? (
-                <div className="text-sm text-slate-500">연속 달성 중인 루틴이 없습니다.</div>
+                <div className="text-sm text-slate-500">
+                  연속 달성 중인 루틴이 없습니다.
+                </div>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {streakHabits.map((habit) => (
@@ -234,10 +247,14 @@ export function OverallTabContent() {
           </div>
 
           {isMonthLoading ? (
-            <div className="mb-3 text-xs text-slate-500">캘린더 데이터를 불러오는 중...</div>
+            <div className="mb-3 text-xs text-slate-500">
+              캘린더 데이터를 불러오는 중...
+            </div>
           ) : null}
           {isMonthError ? (
-            <div className="mb-3 text-xs text-red-600">월간 데이터 로드에 실패했습니다.</div>
+            <div className="mb-3 text-xs text-red-600">
+              월간 데이터 로드에 실패했습니다.
+            </div>
           ) : null}
 
           <div className="grid grid-cols-7 gap-2 sm:gap-3">
@@ -250,11 +267,14 @@ export function OverallTabContent() {
                   "aspect-square rounded-md border border-black/5 p-1",
                   levelClass(cell.level),
                   !cell.inCurrentMonth && "opacity-35",
-                  selectedDate === toDateString(cell.date) && "ring-2 ring-emerald-500"
+                  selectedDate === toDateString(cell.date) &&
+                    "ring-2 ring-emerald-500"
                 )}
                 aria-label={`${toDateString(cell.date)} 상세 보기`}
               >
-                <div className="text-[10px] text-slate-700">{cell.date.getDate()}</div>
+                <div className="text-[10px] text-slate-700">
+                  {cell.date.getDate()}
+                </div>
               </button>
             ))}
           </div>
@@ -275,10 +295,14 @@ export function OverallTabContent() {
           </CardHeader>
           <CardContent className="space-y-4">
             {isDayLoading ? (
-              <div className="text-sm text-slate-500">상세 데이터를 불러오는 중...</div>
+              <div className="text-sm text-slate-500">
+                상세 데이터를 불러오는 중...
+              </div>
             ) : null}
             {isDayError ? (
-              <div className="text-sm text-red-600">상세 데이터 로드에 실패했습니다.</div>
+              <div className="text-sm text-red-600">
+                상세 데이터 로드에 실패했습니다.
+              </div>
             ) : null}
 
             {!isDayLoading && !isDayError ? (
@@ -302,16 +326,22 @@ export function OverallTabContent() {
         </CardHeader>
         <CardContent className="space-y-3">
           {isWeeklyGoalLoading ? (
-            <div className="text-sm text-slate-500">주간 목표 데이터를 불러오는 중...</div>
+            <div className="text-sm text-slate-500">
+              주간 목표 데이터를 불러오는 중...
+            </div>
           ) : null}
           {isWeeklyGoalError ? (
-            <div className="text-sm text-red-600">주간 목표 데이터 로드에 실패했습니다.</div>
+            <div className="text-sm text-red-600">
+              주간 목표 데이터 로드에 실패했습니다.
+            </div>
           ) : null}
 
           {!isWeeklyGoalLoading && !isWeeklyGoalError ? (
             <>
               {(weeklyGoalData?.habits ?? []).length === 0 ? (
-                <div className="text-sm text-slate-500">활성 루틴이 없습니다.</div>
+                <div className="text-sm text-slate-500">
+                  활성 루틴이 없습니다.
+                </div>
               ) : null}
 
               {(weeklyGoalData?.habits ?? []).map((item) => {
@@ -344,7 +374,7 @@ export function OverallTabContent() {
         </CardContent>
       </Card>
 
-      <NotificationSettingsCard />
+      {/* <NotificationSettingsCard /> */}
     </div>
   );
 }
@@ -373,7 +403,9 @@ function HabitListBlock({
             >
               <div className="flex items-center gap-2">
                 <span>{habit.icon}</span>
-                <span className="text-sm font-medium text-slate-900">{habit.name}</span>
+                <span className="text-sm font-medium text-slate-900">
+                  {habit.name}
+                </span>
               </div>
               <div className="mt-1 text-xs text-slate-700">
                 {TIME_LABEL[habit.time_slot]}

@@ -60,6 +60,8 @@ type HabitEditInitial = {
   time_text: string | null;
   icon: string;
   color: string;
+  reminder_enabled: boolean;
+  reminder_time: string | null;
 };
 
 export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
@@ -76,6 +78,12 @@ export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
 
   const [timePreset, setTimePreset] = useState<TimePreset>(initial.time_slot);
   const [timeText, setTimeText] = useState(initial.time_text ?? "");
+  const [reminderEnabled, setReminderEnabled] = useState(
+    initial.reminder_enabled
+  );
+  const [reminderTime, setReminderTime] = useState(
+    initial.reminder_time ?? "20:00"
+  );
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -105,6 +113,8 @@ export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
           goal: goal.trim(),
           icon: selectedIcon,
           color: selectedColor,
+          reminder_enabled: reminderEnabled,
+          reminder_time: reminderEnabled ? reminderTime : null,
         }),
       });
 
@@ -293,6 +303,28 @@ export function HabitEditForm({ initial }: { initial: HabitEditInitial }) {
               );
             })}
             <input type="hidden" name="color" value={selectedColor} />
+          </div>
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="reminder">루틴 알림</FieldLabel>
+          <div className="flex items-center justify-between gap-3">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={reminderEnabled}
+                onChange={(e) => setReminderEnabled(e.target.checked)}
+              />
+              <span>이 루틴 알림 받기</span>
+            </label>
+            <input
+              id="reminder"
+              type="time"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              disabled={!reminderEnabled}
+              className="rounded-md border border-slate-300 px-2 py-1 text-sm disabled:opacity-50"
+            />
           </div>
         </Field>
 

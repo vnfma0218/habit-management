@@ -22,7 +22,17 @@ export async function PATCH(
   }
 
   const { id: habitId } = await ctx.params;
-  const { name, weekly_target, time_slot, time_text, goal, icon, color } =
+  const {
+    name,
+    weekly_target,
+    time_slot,
+    time_text,
+    goal,
+    icon,
+    color,
+    reminder_enabled,
+    reminder_time,
+  } =
     (await req.json()) as {
       name?: string;
       weekly_target?: number;
@@ -31,6 +41,8 @@ export async function PATCH(
       goal?: string;
       icon?: string;
       color?: string;
+      reminder_enabled?: boolean;
+      reminder_time?: string;
     };
 
   const cleanName = (name ?? "").trim();
@@ -62,6 +74,12 @@ export async function PATCH(
   if (!color) {
     return NextResponse.json(
       { error: "색상을 선택해주세요." },
+      { status: 400 }
+    );
+  }
+  if (reminder_enabled && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(reminder_time ?? "")) {
+    return NextResponse.json(
+      { error: "알림 시간은 HH:MM 형식이어야 합니다." },
       { status: 400 }
     );
   }
@@ -105,6 +123,8 @@ export async function PATCH(
       goal: (goal ?? "").trim() || null,
       icon,
       color,
+      reminder_enabled: Boolean(reminder_enabled),
+      reminder_time: reminder_enabled ? reminder_time : null,
       order_in_time: nextOrder,
     })
     .eq("id", habitId)

@@ -10,7 +10,17 @@ function isTimeSlot(v: unknown): v is TimeSlot {
 export async function POST(req: Request) {
   const supabase = await createClient();
 
-  const { name, weekly_target, time_slot, time_text, goal, icon, color } =
+  const {
+    name,
+    weekly_target,
+    time_slot,
+    time_text,
+    goal,
+    icon,
+    color,
+    reminder_enabled,
+    reminder_time,
+  } =
     (await req.json()) as {
       name?: string;
       weekly_target?: number;
@@ -19,6 +29,8 @@ export async function POST(req: Request) {
       goal?: string;
       icon?: string;
       color?: string;
+      reminder_enabled?: boolean;
+      reminder_time?: string;
     };
 
   // ✅ 서버에서 로그인 체크 (RLS와 별개로 에러 메시지 깔끔하게)
@@ -64,6 +76,12 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+  if (reminder_enabled && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(reminder_time ?? "")) {
+    return NextResponse.json(
+      { error: "알림 시간은 HH:MM 형식이어야 합니다." },
+      { status: 400 }
+    );
+  }
 
   // ✅ order_in_time: 같은 시간대 마지막 + 10
   const { data: last, error: lastErr } = await supabase
@@ -90,6 +108,8 @@ export async function POST(req: Request) {
       goal: (goal ?? "").trim() || null,
       icon,
       color,
+      reminder_enabled: Boolean(reminder_enabled),
+      reminder_time: reminder_enabled ? reminder_time : null,
       order_in_time: nextOrder,
       // user_id는 DB default auth.uid() 사용 권장 (없다면 여기서 user.id 넣어도 됨)
       user_id: user.id,

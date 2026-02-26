@@ -18,7 +18,9 @@ export default async function MyHabitDetail({
 
   const { data: habit, error } = await supabase
     .from("habits")
-    .select("id,name,goal,weekly_target,time_slot,time_text,icon,color,user_id")
+    .select(
+      "id,name,goal,weekly_target,time_slot,time_text,icon,color,reminder_enabled,reminder_time,user_id"
+    )
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -45,6 +47,8 @@ export default async function MyHabitDetail({
           time_text: habit.time_text,
           icon: habit.icon,
           color: habit.color,
+          reminder_enabled: habit.reminder_enabled ?? false,
+          reminder_time: habit.reminder_time ?? null,
         }}
       />
     </div>

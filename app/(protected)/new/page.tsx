@@ -62,6 +62,8 @@ export default function New() {
 
   const [timePreset, setTimePreset] = useState<TimePreset>(null);
   const [timeText, setTimeText] = useState("");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState("20:00");
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -110,6 +112,8 @@ export default function New() {
           goal: goal.trim(),
           icon: selectedIcon,
           color: selectedColor,
+          reminder_enabled: reminderEnabled,
+          reminder_time: reminderEnabled ? reminderTime : null,
         }),
       });
 
@@ -119,8 +123,8 @@ export default function New() {
       // 성공 → 예: 오늘 화면으로
       router.push("/");
       router.refresh();
-    } catch (err: any) {
-      // setErrorMsg(err.message ?? "에러가 발생했어요.");
+    } catch {
+      toast.error("요청에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -287,9 +291,36 @@ export default function New() {
             </div>
           </Field>
 
+          <Field>
+            <FieldLabel htmlFor="reminder">루틴 알림</FieldLabel>
+            <div className="flex items-center justify-between gap-3">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={reminderEnabled}
+                  onChange={(e) => setReminderEnabled(e.target.checked)}
+                />
+                <span>이 루틴 알림 받기</span>
+              </label>
+              <input
+                id="reminder"
+                type="time"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+                disabled={!reminderEnabled}
+                className="rounded-md border border-zinc-300 px-2 py-1 text-sm disabled:opacity-50"
+              />
+            </div>
+          </Field>
+
           <Field orientation="horizontal">
-            <Button variant="primary" type="submit" className="w-full">
-              루틴 시작하기
+            <Button
+              variant="primary"
+              type="submit"
+              className="w-full"
+              disabled={submitting}
+            >
+              {submitting ? "저장 중..." : "루틴 시작하기"}
             </Button>
           </Field>
         </FieldGroup>

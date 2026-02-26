@@ -15,12 +15,14 @@ import {
   useSensors,
   closestCenter,
 } from "@dnd-kit/core";
+
 import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
+
 import { CSS } from "@dnd-kit/utilities";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -291,6 +293,11 @@ function SortableHabitRow({
               {habit.time_text}
             </div>
           ) : null}
+          {habit.goal ? (
+            <div className="mt-0.5 truncate text-xs text-slate-700/90">
+              목표: {habit.goal}
+            </div>
+          ) : null}
         </div>
 
         {/* check */}
@@ -330,6 +337,11 @@ function ExcludedHabitRow({
         {habit.time_text ? (
           <div className="mt-0.5 truncate text-xs text-slate-600">
             {habit.time_text}
+          </div>
+        ) : null}
+        {habit.goal ? (
+          <div className="mt-0.5 truncate text-xs text-slate-700/90">
+            목표: {habit.goal}
           </div>
         ) : null}
       </div>
