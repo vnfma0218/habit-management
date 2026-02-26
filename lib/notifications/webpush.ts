@@ -5,7 +5,7 @@ type PushRow = {
   endpoint: string;
   p256dh: string;
   auth: string;
-  last_sent_date: string | null;
+  // last_sent_date: string | null;
 };
 
 function getVapidConfig() {
@@ -22,7 +22,11 @@ function getVapidConfig() {
 async function getWebPush() {
   const webpush = await import("web-push");
   const vapid = getVapidConfig();
-  webpush.default.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
+  webpush.default.setVapidDetails(
+    vapid.subject,
+    vapid.publicKey,
+    vapid.privateKey
+  );
   return webpush.default;
 }
 

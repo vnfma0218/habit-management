@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentKSTDateString, getCurrentKSTTimeString } from "@/lib/date/kst";
+import {
+  getCurrentKSTDateString,
+  getCurrentKSTTimeString,
+} from "@/lib/date/kst";
 import { sendPushToSubscription } from "@/lib/notifications/webpush";
 
 async function handleCron(req: Request) {
@@ -17,7 +20,7 @@ async function handleCron(req: Request) {
 
   const { data: rows, error } = await supabase
     .from("notification_subscriptions")
-    .select("id,user_id,endpoint,p256dh,auth,last_sent_date")
+    .select("id,user_id,endpoint,p256dh,auth")
     .eq("is_enabled", true)
     .eq("timezone", "Asia/Seoul");
 
@@ -50,7 +53,12 @@ async function handleCron(req: Request) {
 
   const habitsByUser = new Map<
     string,
-    Array<{ id: string; name: string; reminder_time: string | null; last_reminded_date: string | null }>
+    Array<{
+      id: string;
+      name: string;
+      reminder_time: string | null;
+      last_reminded_date: string | null;
+    }>
   >();
   for (const habit of dueHabits ?? []) {
     if (habit.last_reminded_date === today) continue;
@@ -64,11 +72,13 @@ async function handleCron(req: Request) {
   const remindedHabitIds = new Set<string>();
 
   for (const row of rows ?? []) {
-    if (row.last_sent_date === today) continue;
     const userDueHabits = habitsByUser.get(row.user_id) ?? [];
     if (userDueHabits.length === 0) continue;
 
-    const names = userDueHabits.slice(0, 3).map((habit) => habit.name).join(", ");
+    const names = userDueHabits
+      .slice(0, 3)
+      .map((habit) => habit.name)
+      .join(", ");
     const moreCount = userDueHabits.length - 3;
     const body =
       moreCount > 0
@@ -83,14 +93,6 @@ async function handleCron(req: Request) {
       });
       sent += 1;
       userDueHabits.forEach((habit) => remindedHabitIds.add(habit.id));
-
-      await supabase
-        .from("notification_subscriptions")
-        .update({
-          last_sent_date: today,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", row.id);
     } catch {
       failedIds.push(row.id);
     }
